@@ -11,6 +11,16 @@
 | B. EAS 云构建 | Expo 账号 | 模拟器包 / App Store 包 | 要上架才用 |
 | C. 本地 Mac | macOS + Xcode | 调试直装 / Archive | 长期维护 |
 
+## ✅ 已经构建完成（2026-11-02）
+
+- 流水线：<https://github.com/yxsiwu1/camera/actions/runs/41417163509>（SUCCESS，Xcode 15.4，约 10 分钟）
+- 现成 ipa：<https://github.com/yxsiwu1/camera/releases/download/ios-1.3.0/Drama-trollstore.ipa>（16.58 MB）
+- 发布页：<https://github.com/yxsiwu1/camera/releases/tag/ios-1.3.0>
+- 产物实测：主程序 `arm64`、`LC_CODE_SIGNATURE` 存在、`CSMAGIC_EMBEDDED_SIGNATURE` 存在、
+  entitlements 含 `keychain-access-groups` / `application-identifier`、
+  `hermes.framework` 已签名、`Info.plist` 的 `MinimumOSVersion = 15.1`、无 `NSMicrophoneUsageDescription`。
+- 手机上直接点上面那条 ipa 链接下载 → 用 TrollStore 打开 → Install。
+
 App 身份（已写死，可按需改）：
 
 | 项 | 值 |
