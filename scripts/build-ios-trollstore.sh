@@ -19,6 +19,13 @@ CONFIG="Release"
 WORKSPACE="$ROOT/ios/$APP_NAME.xcworkspace"
 ENT="$ROOT/trollstore/entitlements.plist"
 OUT="${1:-$ROOT/build/Drama-trollstore.ipa}"
+# 允许传相对路径（如 CI 里的 ios/Drama-trollstore.ipa）——后面要在临时目录里 zip，
+# 相对路径会指向不存在的目录，所以先转成绝对路径
+case "$OUT" in
+  /*) : ;;
+  *) OUT="$ROOT/$OUT" ;;
+esac
+mkdir -p "$(dirname "$OUT")"
 
 need() { command -v "$1" >/dev/null 2>&1 || { echo "缺少依赖：$1"; exit 1; }; }
 need xcodebuild

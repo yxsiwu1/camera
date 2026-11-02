@@ -19,6 +19,8 @@ credentials.json
 # Generated native projects and local builds (Expo prebuild)
 /android/
 /ios/
+/build/
+dist-ios/
 *.apk
 *.aab
 *.ipa
