@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">露齿笑的全身小马</title>
+  <desc id="desc">纯色 #e5ce4d 背景，中性造型的栗色全身小马，瘦长脸，光滑无鬃毛的脖子，大小眉眼和歪嘴露齿笑。四个马蹄为直筒圆头的简笔轮廓，与腿部同色，无外扩、袜口和细节分色。</desc>
+  <rect width="512" height="512" fill="#e5ce4d"/>
+  <g stroke="#38271F" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+    <g id="tail">
+      <path d="M358 265C387 231 420 242 434 272C445 296 434 329 444 344C416 346 399 324 406 300C413 278 394 272 372 285Z" fill="#38271F"/>
+      <path d="M391 264C426 253 414 314 429 322" fill="none" stroke="#785038" stroke-width="6"/>
+    </g>
+    <g id="far-legs" fill="#A76035">
+      <path d="M242 318L244 357L285 383A14 14 0 0 1 270 407L226 380Q215 374 215 358L211 323Z"/>
+      <path d="M337 315Q356 316 365 338L380 371L402 384A14 14 0 0 1 388 408L356 389Q350 385 346 375L326 341Z"/>
+    </g>
+    <path id="body" d="M183 210Q212 191 231 218L246 246Q270 262 312 249C343 236 372 253 378 281C387 321 360 351 322 355L251 353Q216 359 191 337Q178 324 181 295Z" fill="#C77A44"/>
+    <path d="M257 332Q295 343 330 332" fill="none" stroke="#AC6134" stroke-width="11"/>
+    <g id="near-legs" fill="#C77A44">
+      <path d="M216 320Q234 332 231 348L207 425A14 14 0 0 1 180 417L199 354L191 342"/>
+      <path d="M323 317Q346 308 352 331Q355 345 343 364L332 389L339 425A14 14 0 0 1 311 431L303 391Q301 383 305 374L316 348"/>
+    </g>
+    <g id="head" transform="translate(32 23) scale(.56 .70)" stroke-width="10">
+      <path d="M184 175C151 166 124 115 133 91C137 77 174 94 191 119Q209 145 208 168Z" fill="#C77A44"/>
+      <path d="M180 153Q158 130 155 113Q179 122 187 147Z" fill="#ECA080" stroke="none"/>
+      <path d="M270 161C260 127 277 72 300 62C317 56 332 105 314 145L299 171Z" fill="#C77A44"/>
+      <path d="M288 142Q283 115 302 87Q312 116 301 142Z" fill="#ECA080" stroke="none"/>
+      <path d="M184 158C207 138 266 134 298 160C330 187 322 238 338 284C352 327 324 365 270 380C213 396 160 363 161 316C162 278 153 234 159 201Q165 173 184 158Z" fill="#C77A44"/>
+      <path d="M226 175Q246 164 259 181L250 211L267 250L263 294L224 299L217 259L229 219L216 197Z" fill="#F8E9CB" stroke="none"/>
+      <path d="M176 170C158 146 178 120 212 127C225 103 262 102 283 123C310 119 327 139 315 161C304 180 280 187 260 179Q278 164 272 151C250 177 214 179 199 169Q216 158 214 148Q199 168 176 170Z" fill="#38271F"/>
+      <path d="M203 138Q225 125 244 133" fill="none" stroke="#785038" stroke-width="7"/>
+      <path d="M169 191Q181 171 201 185M274 200L310 204" fill="none" stroke-width="8"/>
+      <ellipse cx="194" cy="224" rx="25" ry="33" fill="#FFFCF1" stroke-width="7"/>
+      <path d="M265 220Q289 211 312 220L311 236C309 267 268 268 265 238Z" fill="#FFFCF1" stroke-width="7"/>
+      <ellipse cx="203" cy="229" rx="10" ry="14" fill="#38271F" stroke="none"/>
+      <ellipse cx="279" cy="237" rx="9" ry="12" fill="#38271F" stroke="none"/>
+      <circle cx="206" cy="225" r="3" fill="#FFFCF1" stroke="none"/>
+      <circle cx="282" cy="233" r="3" fill="#FFFCF1" stroke="none"/>
+      <path d="M183 264C208 252 225 265 249 265C277 265 296 248 319 260C346 274 360 304 352 336C344 373 303 396 256 397C207 399 162 378 151 347C140 314 153 278 183 264Z" fill="#F2CA91"/>
+      <ellipse cx="185" cy="311" rx="17" ry="10" fill="#E49A76" stroke="none"/>
+      <ellipse cx="323" cy="304" rx="16" ry="10" fill="#E49A76" stroke="none"/>
+      <ellipse cx="206" cy="289" rx="8" ry="12" transform="rotate(-28 206 289)" fill="#70432D" stroke="none"/>
+      <ellipse cx="294" cy="285" rx="8" ry="12" transform="rotate(28 294 285)" fill="#70432D" stroke="none"/>
+      <g id="crooked-grin" transform="rotate(-9 253 349)">
+      <path d="M185 325Q252 351 320 317C313 360 287 381 253 380C221 379 197 357 185 325Z" fill="#38271F" stroke-width="7"/>
+      <path d="M207 333Q254 345 299 326L294 347Q253 363 215 351Z" fill="#FFFCF1" stroke-width="5"/>
+      <path d="M252 339L253 356" fill="none" stroke-width="5"/>
+      <path d="M239 372Q256 358 274 370Q259 378 239 372Z" fill="#E99487" stroke="none"/>
+      <path d="M178 330L185 323M319 316L326 320" fill="none" stroke-width="7"/>
+      </g>
+    </g>
+  </g>
+</svg>

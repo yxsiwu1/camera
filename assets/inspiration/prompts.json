@@ -1,0 +1,50 @@
+{
+  "generator": "Built-in image_gen",
+  "images": [
+    {
+      "id": "portrait-window",
+      "category": "人像",
+      "prompt": "Use case: photorealistic-natural. Asset type: a single photography inspiration image for the 人像 category of a camera app. An adult East Asian woman in a cream linen shirt beside a cafe window, soft natural side lighting, candid thoughtful expression, half-body portrait, shallow depth of field. Portrait orientation 2:3, full-bleed photograph, professional natural photography with realistic textures and thoughtful composition. No text, watermark, collage, frame, logos or UI."
+    },
+    {
+      "id": "portrait-street",
+      "category": "人像",
+      "prompt": "Use case: photorealistic-natural. Asset type: a single photography inspiration image for the 人像 category of a camera app. An adult East Asian man in a dark casual jacket walking through a sunlit tree-lined street, golden backlight on his hair, environmental portrait, relaxed candid pose. Portrait orientation 2:3, full-bleed photograph, professional natural photography with realistic textures and thoughtful composition. No text, watermark, collage, frame, logos or UI."
+    },
+    {
+      "id": "portrait-coast",
+      "category": "人像",
+      "prompt": "Use case: photorealistic-natural. Asset type: a single photography inspiration image for the 人像 category of a camera app. An adult woman with short dark hair in a simple white shirt standing by the coast at sunset, wind moving her hair, cinematic profile portrait, warm rim light, ocean background. Portrait orientation 2:3, full-bleed photograph, professional natural photography with realistic textures and thoughtful composition. No text, watermark, collage, frame, logos or UI."
+    },
+    {
+      "id": "landscape-mountains",
+      "category": "风景",
+      "prompt": "Use case: photorealistic-natural. Asset type: a single photography inspiration image for the 风景 category of a camera app. Layered mountain ridges and a still alpine lake at dawn, delicate morning mist, reflection and balanced horizon, no people. Portrait orientation 2:3, full-bleed photograph, professional natural photography with realistic textures and thoughtful composition. No text, watermark, collage, frame, logos or UI."
+    },
+    {
+      "id": "landscape-coast",
+      "category": "风景",
+      "prompt": "Use case: photorealistic-natural. Asset type: a single photography inspiration image for the 风景 category of a camera app. A sweeping curved coastline with sea cliffs and turquoise water, warm afternoon light, foreground coastal grasses, leading lines, no people. Portrait orientation 2:3, full-bleed photograph, professional natural photography with realistic textures and thoughtful composition. No text, watermark, collage, frame, logos or UI."
+    },
+    {
+      "id": "landscape-forest",
+      "category": "风景",
+      "prompt": "Use case: photorealistic-natural. Asset type: a single photography inspiration image for the 风景 category of a camera app. A quiet path through a lush forest with sunbeams filtering through trees, soft mist, rich natural greens, strong depth and leading lines, no people. Portrait orientation 2:3, full-bleed photograph, professional natural photography with realistic textures and thoughtful composition. No text, watermark, collage, frame, logos or UI."
+    },
+    {
+      "id": "night-city",
+      "category": "夜景",
+      "prompt": "Use case: photorealistic-natural. Asset type: a single photography inspiration image for the 夜景 category of a camera app. Rainy city street at blue hour with warm shop windows reflected on wet pavement, cinematic deep blue and amber palette, no legible signs, no close-up people. Portrait orientation 2:3, full-bleed photograph, professional natural photography with realistic textures and thoughtful composition. No text, watermark, collage, frame, logos or UI."
+    },
+    {
+      "id": "night-stars",
+      "category": "夜景",
+      "prompt": "Use case: photorealistic-natural. Asset type: a single photography inspiration image for the 夜景 category of a camera app. A realistic Milky Way above a dark mountain silhouette and quiet lake, clear night sky, restrained natural colors, astrophotography, no people. Portrait orientation 2:3, full-bleed photograph, professional natural photography with realistic textures and thoughtful composition. No text, watermark, collage, frame, logos or UI."
+    },
+    {
+      "id": "night-bridge",
+      "category": "夜景",
+      "prompt": "Use case: photorealistic-natural. Asset type: a single photography inspiration image for the 夜景 category of a camera app. An illuminated elegant bridge across a calm river at night, glowing warm lamps reflected in the water, deep blue sky, balanced architectural photography, no people. Portrait orientation 2:3, full-bleed photograph, professional natural photography with realistic textures and thoughtful composition. No text, watermark, collage, frame, logos or UI."
+    }
+  ]
+}

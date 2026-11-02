@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  TrollStore（巨魔）安装用 entitlements
+  CoreTrust 漏洞会跳过描述文件校验，但 App 自己调用 Keychain 时仍然读这份 entitlements：
+  expo-secure-store 把模型 API Key 存在 Keychain，缺 keychain-access-groups 会直接报 -34018。
+-->
+<plist version="1.0">
+  <dict>
+    <key>application-identifier</key>
+    <string>com.warmlens.app</string>
+    <key>com.apple.application-identifier</key>
+    <string>com.warmlens.app</string>
+    <key>keychain-access-groups</key>
+    <array>
+      <string>com.warmlens.app</string>
+    </array>
+    <key>get-task-allow</key>
+    <false/>
+  </dict>
+</plist>
