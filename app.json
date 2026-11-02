@@ -2,7 +2,7 @@
   "expo": {
     "name": "Drama相机",
     "slug": "warm-lens",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "scheme": "warm-lens",
@@ -13,7 +13,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.warmlens.app",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "Drama相机需要使用相机，实时给你温柔的构图提示。",
         "NSPhotoLibraryAddUsageDescription": "Drama相机需要将你的照片保存到相册。",

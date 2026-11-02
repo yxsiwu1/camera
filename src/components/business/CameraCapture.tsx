@@ -1,26 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { CameraView } from 'expo-camera';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { colors, shadows } from '../../constants/theme';
 import { CAMERA_STYLES } from '../../constants/guidance';
-import type { CameraStyle } from '../../types/guidance';
+import type { CameraRatio, CameraStyle } from '../../types/guidance';
 import { useCameraGuidance } from '../../hooks/useCameraGuidance';
 import { CameraGuidanceControls } from './CameraGuidanceControls';
 import { CameraParameterPanel } from './CameraParameterPanel';
 import { CameraDirectionOverlay } from './CameraDirectionOverlay';
 import { CameraReadyFrame, CameraReadyNotice, CameraShutterHalo } from './CameraReadyEffects';
-import { digitalZoomFactor } from '../../lib/cameraGeometry';
+import { digitalZoomFactor, frameSize } from '../../lib/cameraGeometry';
 import { getCompositionMessage } from '../../lib/compositionMessage';
 import { getDirectionCue } from '../../lib/guidanceDirection';
 import { useCaptureStore } from '../../store/captureStore';
@@ -36,6 +38,8 @@ type Props = {
 const MODES = ['人像', '风景', '夜景'] as const;
 const ZOOM_STEPS = [0, 1 / 3, 2 / 3, 1];
 const ZOOM_LABELS = ['1x', '2x', '3x', '4x'];
+const RATIOS: CameraRatio[] = ['4:3', '16:9', '1:1'];
+const RATIO_HINT: Record<CameraRatio, string> = { '4:3': '标准', '16:9': '宽幅', '1:1': '方形' };
 
 const WHITE_BALANCE_LABEL: Record<string, string> = {
   auto: '自动',
@@ -72,11 +76,27 @@ export function CameraCapture({ cameraRef, onClose, onCapture, onConfigure, onOp
   const guide = useCameraGuidance(cameraRef, onCapture);
   const [viewfinder, setViewfinder] = useState({ width: 0, height: 0 });
   const [tuningOpen, setTuningOpen] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+  // iOS keeps the failed capture session of the very first mount, so remount the
+  // native preview once camera access is finally granted.
+  const [cameraKey, setCameraKey] = useState(0);
+  const grantedRef = useRef(permission?.granted ?? false);
   const savedUris = useCaptureStore((state) => state.savedUris);
   const galleryThumb = savedUris[0];
 
+  useEffect(() => {
+    if (permission && !permission.granted && permission.canAskAgain) void requestPermission();
+  }, [permission, requestPermission]);
+  useEffect(() => {
+    const granted = permission?.granted ?? false;
+    if (granted && !grantedRef.current) setCameraKey((key) => key + 1);
+    grantedRef.current = granted;
+  }, [permission]);
+
   const { context } = guide;
-  const blocked = !guide.active || !guide.ready || guide.capturing || guide.sampling || guide.adjustingParameters;
+  // Only a live camera view gates the controls: a pending or stalled AI plan
+  // must never leave the shutter, the panel or the lens switch dead.
+  const blocked = !guide.active || guide.capturing || guide.adjustingParameters || guide.switching;
   const canShoot = guide.enabled && guide.executionPhase === 'ready';
   const message = guide.switching
     ? '正在切换镜头…'
@@ -109,6 +129,20 @@ export function CameraCapture({ cameraRef, onClose, onCapture, onConfigure, onOp
     { label: '闪光灯', value: context.flash === 'on' ? '开' : context.flash === 'auto' ? '自动' : '关' },
   ];
   const activeZoomStep = ZOOM_STEPS.findIndex((step) => Math.abs(step - context.zoom) < 0.06);
+  const frame = frameSize(viewfinder.width, viewfinder.height, context.ratio);
+  const frameLeft = Math.max(0, (viewfinder.width - frame.width) / 2);
+  const frameTop = Math.max(0, (viewfinder.height - frame.height) / 2);
+  const showDiagnostics = () => {
+    Alert.alert('相机诊断', [
+      `平台：${Platform.OS} ${String(Platform.Version)}`,
+      `权限：${permission ? (permission.granted ? '已授权' : permission.canAskAgain ? '未授权' : '已拒绝') : '未知'}`,
+      `active ${guide.active} · ready ${guide.ready} · capturing ${guide.capturing}`,
+      `mountError：${guide.mountError ?? '无'}`,
+      `画幅：${context.ratio} · 取景 ${Math.round(frame.width)}×${Math.round(frame.height)}`,
+      `能力：${JSON.stringify(context.capabilities ?? null)}`,
+      `状态：${guide.status.message}`,
+    ].join('\n'));
+  };
 
   return (
     <View collapsable={false} style={styles.screen}>
@@ -116,13 +150,20 @@ export function CameraCapture({ cameraRef, onClose, onCapture, onConfigure, onOp
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         {/* ── Brand header ── */}
         <View style={styles.header}>
-          <View style={styles.headerBrand}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="相机诊断"
+            accessibilityHint="长按查看相机状态"
+            delayLongPress={500}
+            onLongPress={showDiagnostics}
+            style={styles.headerBrand}
+          >
             <Ionicons name="camera-outline" size={29} color={colors.primary} />
             <View>
               <Text style={styles.headerTitle}>Drama相机</Text>
               <Text style={styles.headerSubtitle}>AI 电影画质</Text>
             </View>
-          </View>
+          </Pressable>
 
           <View style={styles.headerActions}>
             <Pressable
@@ -169,6 +210,28 @@ export function CameraCapture({ cameraRef, onClose, onCapture, onConfigure, onOp
             </View>
           </View>
 
+          {/* ── Framing ratio ── */}
+          <View style={styles.ratioRow}>
+            <Text style={styles.ratioLabel}>画幅</Text>
+            {RATIOS.map((ratio) => {
+              const active = context.ratio === ratio;
+              return (
+                <Pressable
+                  key={ratio}
+                  accessibilityRole="button"
+                  accessibilityLabel={`画幅 ${ratio}`}
+                  accessibilityState={{ selected: active }}
+                  disabled={guide.capturing}
+                  onPress={() => guide.changeRatio(ratio)}
+                  style={[styles.ratioChip, active && styles.ratioChipActive]}
+                >
+                  <Text style={[styles.ratioChipText, active && styles.ratioChipTextActive]}>{ratio}</Text>
+                  <Text style={[styles.ratioChipHint, active && styles.ratioChipHintActive]}>{RATIO_HINT[ratio]}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
           {/* ── Live viewfinder ── */}
           <View
             testID="camera-viewfinder"
@@ -181,19 +244,25 @@ export function CameraCapture({ cameraRef, onClose, onCapture, onConfigure, onOp
               }
             }}
           >
-            {guide.active && (
+            {/* Letterboxed preview: the native surface is "cover"-cropped to the
+                selected ratio, so the framing matches the saved photo. */}
+            {frame.width > 1 && frame.height > 1 && (
+            <View
+              collapsable={false}
+              style={[styles.frameRect, { left: frameLeft, top: frameTop, width: frame.width, height: frame.height }]}
+            >
               <View
                 collapsable={false}
                 style={[StyleSheet.absoluteFill, { transform: [{ scale: digitalZoomFactor(context.zoom) }] }]}
               >
                 {/* Expo mirrors the front preview even when captured photos use mirror=false. */}
                 <CameraView
+                  key={cameraKey}
                   ref={cameraRef}
                   style={[StyleSheet.absoluteFill, { transform: [{ scaleX: context.facing === 'front' ? -1 : 1 }] }]}
                   facing={context.facing}
                   zoom={0}
                   mirror={false}
-                  ratio="4:3"
                   flash={context.flash}
                   autofocus="off"
                   animateShutter={false}
@@ -201,35 +270,36 @@ export function CameraCapture({ cameraRef, onClose, onCapture, onConfigure, onOp
                   onMountError={guide.cameraError}
                 />
               </View>
-            )}
 
-            {/* warm cinematic vignette */}
-            <LinearGradient
-              colors={['rgba(24, 22, 18, 0.28)', 'transparent', 'rgba(24, 22, 18, 0.46)']}
-              locations={[0, 0.35, 1]}
-              style={StyleSheet.absoluteFill}
-              pointerEvents="none"
-            />
-
-            {/* rule-of-thirds grid */}
-            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-              <View style={[styles.gridVertical, { left: '33.33%' }]} />
-              <View style={[styles.gridVertical, { left: '66.66%' }]} />
-              <View style={[styles.gridHorizontal, { top: '33.33%' }]} />
-              <View style={[styles.gridHorizontal, { top: '66.66%' }]} />
-
-              <CameraDirectionOverlay
-                target={guide.target}
-                enabled={guide.enabled && guide.ready}
-                width={viewfinder.width}
-                height={viewfinder.height}
+              {/* warm cinematic vignette */}
+              <LinearGradient
+                colors={['rgba(24, 22, 18, 0.28)', 'transparent', 'rgba(24, 22, 18, 0.46)']}
+                locations={[0, 0.35, 1]}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
               />
-              <CameraReadyFrame
-                active={canShoot}
-                width={viewfinder.width}
-                height={viewfinder.height}
-              />
+
+              {/* rule-of-thirds grid */}
+              <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                <View style={[styles.gridVertical, { left: '33.33%' }]} />
+                <View style={[styles.gridVertical, { left: '66.66%' }]} />
+                <View style={[styles.gridHorizontal, { top: '33.33%' }]} />
+                <View style={[styles.gridHorizontal, { top: '66.66%' }]} />
+
+                <CameraDirectionOverlay
+                  target={guide.target}
+                  enabled={guide.enabled && guide.ready}
+                  width={frame.width}
+                  height={frame.height}
+                />
+                <CameraReadyFrame
+                  active={canShoot}
+                  width={frame.width}
+                  height={frame.height}
+                />
+              </View>
             </View>
+            )}
 
             {/* guidance banner */}
             <View pointerEvents="box-none" style={styles.bannerWrap}>
@@ -320,9 +390,9 @@ export function CameraCapture({ cameraRef, onClose, onCapture, onConfigure, onOp
                 accessibilityRole="button"
                 accessibilityLabel="微调相机参数"
                 accessibilityState={{ expanded: tuningOpen }}
-                disabled={blocked || guide.executionPhase === 'parameters'}
+                disabled={!guide.canTune}
                 onPress={() => setTuningOpen(true)}
-                style={({ pressed }) => [styles.tuneButton, (blocked || pressed) && { opacity: 0.7 }]}
+                style={({ pressed }) => [styles.tuneButton, (!guide.canTune || pressed) && { opacity: 0.7 }]}
               >
                 <Ionicons name="options-outline" size={13} color={colors.onSurfaceVariant} />
                 <Text style={styles.tuneButtonText}>微调</Text>
@@ -406,12 +476,12 @@ export function CameraCapture({ cameraRef, onClose, onCapture, onConfigure, onOp
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="拍照"
-                disabled={!guide.ready || guide.capturing || guide.adjustingParameters || !guide.active || guide.executionPhase === 'parameters'}
+                disabled={!guide.canCapture}
                 onPress={() => void guide.capture()}
                 style={({ pressed }) => [
                   styles.shutter,
                   canShoot && styles.readyShutter,
-                  (!guide.ready || guide.capturing) && styles.disabled,
+                  !guide.canCapture && styles.disabled,
                   pressed && styles.pressed,
                 ]}
               >
@@ -456,7 +526,7 @@ export function CameraCapture({ cameraRef, onClose, onCapture, onConfigure, onOp
         </View>
       </SafeAreaView>
       {tuningOpen && <CameraParameterPanel visible={tuningOpen} context={context}
-        appliedTuning={guide.appliedTuning} disabled={blocked || guide.executionPhase === 'parameters'}
+        appliedTuning={guide.appliedTuning} disabled={!guide.canTune}
         busy={guide.adjustingParameters} message={guide.tuningMessage}
         onClose={() => setTuningOpen(false)} onChange={guide.adjustParameters} />}
     </View>
@@ -470,6 +540,54 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1,
+  },
+  frameRect: {
+    position: 'absolute',
+    overflow: 'hidden',
+    backgroundColor: colors.dark,
+  },
+  ratioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  ratioLabel: {
+    color: colors.subtle,
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    marginRight: 2,
+  },
+  ratioChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: colors.surfaceLow,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+  },
+  ratioChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  ratioChipText: {
+    color: colors.onSurfaceVariant,
+    fontSize: 10.5,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  ratioChipTextActive: {
+    color: colors.secondaryFixed,
+  },
+  ratioChipHint: {
+    color: colors.subtle,
+    fontSize: 9,
+  },
+  ratioChipHintActive: {
+    color: colors.secondaryFixedDim,
   },
   header: {
     flexDirection: 'row',

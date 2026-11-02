@@ -21,6 +21,19 @@
   `hermes.framework` 已签名、`Info.plist` 的 `MinimumOSVersion = 15.1`、无 `NSMicrophoneUsageDescription`。
 - 手机上直接点上面那条 ipa 链接下载 → 用 TrollStore 打开 → Install。
 
+## 🔧 v1.3.1：修掉「快门按不动 / 参数不能微调 / 比例不能调」
+
+1.3.0 那版在 iOS 上三个症状其实是同一个根因 + 一个缺失功能：
+
+| 症状 | 根因 | 修法 |
+| :-- | :-- | :-- |
+| 拍摄按钮按不动 | 快门 `disabled` 绑在 `guide.ready` 上，而 `ready` 只由 expo-camera 的 `onCameraReady` 回调置位；iOS 上 `startSession()` 里若相机权限判定时机晚于首帧（或权限刚授予就挂载），回调就不来，`ready` 永远 false → 快门永久禁用（`capture()` 内部还有一层 `!readyRef.current` 直接 return） | 快门改绑新的 `canCapture`（只要 `active && !capturing && !adjustingParameters` 就能按）；`capture()` 去掉 `ready` 硬门控，改为「相机没挂载才提示」；再补一个 1600ms 兜底：过了时间还没收到 `onCameraReady` 且没有 `onMountError`，就当已就绪 |
+| 相机参数无法微调 | 「微调」按钮和面板共用 `blocked`，而 `blocked` 里含 `!guide.ready`，同样被卡死；另外 iOS 侧本来没有 `camera-tuning` 原生模块，`capabilities.native = false`，白平衡/对比度全被判定为不可用 | `blocked` 去掉 `ready`/`sampling`；新增 iOS 原生模块 `modules/camera-tuning/ios/CameraTuningModule.swift`（白平衡 daylight/cloudy/tungsten/fluorescent + auto，走 `AVCaptureDevice` 的锁白平衡增益），`expo-module.config.json` 加 `ios` 平台 |
+| 比例无法调整 | 源码里根本没有比例 UI，取景框和裁切都写死 3:4；`<CameraView ratio="4:3">` 在 iOS 端 expo-camera 根本不实现（死 prop） | 新增「画幅」行：`4:3 / 16:9 / 1:1`；取景框按比例做信箱化（`frameSize()` 计算框内尺寸并居中），拍照裁切按同一比例走 `getPhotoCrop(w,h,zoom,aspect)`，AI 提示词里也带上画幅 |
+
+另外：相机权限改用 `useCameraPermissions()` 显式请求，授予后通过 `cameraKey` 重挂 `CameraView`，避免「权限弹窗与挂载竞态」；
+取景页长按左上角标题可弹出「相机诊断」（平台 / 权限 / active·ready·capturing / mountError / 画幅 / 能力 JSON），实机再出问题直接截图回报即可。
+
 App 身份（已写死，可按需改）：
 
 | 项 | 值 |
@@ -28,7 +41,7 @@ App 身份（已写死，可按需改）：
 | 显示名 | `Drama相机` |
 | Bundle ID | `com.warmlens.app` |
 | URL Scheme | `warm-lens` |
-| 版本 / 构建号 | `1.3.0` / `1` |
+| 版本 / 构建号 | `1.3.1` / `2` |
 | 最低系统 | iOS 15.1（**所以 iOS 16 全系可装可跑**） |
 | 架构 | arm64 |
 | 设备 | iPhone + iPad（`TARGETED_DEVICE_FAMILY = 1,2`） |

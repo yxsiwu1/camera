@@ -15,7 +15,7 @@ export async function analyzeCameraSample(config: GuidanceConfig, context: Guida
   const messages: AIMessage[] = [
     { role: 'system', content: `${CAMERA_MODE_PROMPTS[context.mode]}\n\n${GUIDANCE_SYSTEM_PROMPT}` },
     { role: 'user', content: [
-      { type: 'text', text: `拍摄模式：${context.mode}。风格：${context.style}，${CAMERA_STYLES[context.style]}\n镜头：${context.facing === 'front' ? '前置' : '后置'}，画面不镜像。当前数字放大倍率：${digitalZoomFactor(context.zoom).toFixed(2)} 倍，闪光灯：${context.flash}，图片已按此倍率裁切。本机参数能力：${JSON.stringify(context.capabilities ?? SYSTEM_CAMERA_CAPABILITIES)}。只选择能力列表中的参数。请一次返回最终构图目标与所需相机设置；客户端在本地对准后直接提示拍照，不会再次请求模型复核。` },
+      { type: 'text', text: `拍摄模式：${context.mode}。风格：${context.style}，${CAMERA_STYLES[context.style]}\n画幅：${context.ratio}（图片已按此比例裁切）。镜头：${context.facing === 'front' ? '前置' : '后置'}，画面不镜像。当前数字放大倍率：${digitalZoomFactor(context.zoom).toFixed(2)} 倍，闪光灯：${context.flash}，图片已按此倍率裁切。本机参数能力：${JSON.stringify(context.capabilities ?? SYSTEM_CAMERA_CAPABILITIES)}。只选择能力列表中的参数。请一次返回最终构图目标与所需相机设置；客户端在本地对准后直接提示拍照，不会再次请求模型复核。` },
       { type: 'image_url', image_url: { url: sample.dataUrl } },
     ] },
   ];

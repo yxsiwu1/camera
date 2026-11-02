@@ -1,1 +1,1 @@
-{"platforms":["android"],"android":{"modules":["expo.modules.cameratuning.CameraTuningModule"]}}
+{"platforms":["android","ios"],"android":{"modules":["expo.modules.cameratuning.CameraTuningModule"]},"ios":{"modules":["CameraTuningModule"]}}

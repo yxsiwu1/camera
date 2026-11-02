@@ -4,7 +4,7 @@ import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 import { CameraShotQueue } from './guidanceRules';
 import type { GuidanceSample } from '../types/guidance';
-import { getPhotoCrop } from './cameraGeometry';
+import { getPhotoCrop, RATIO_VALUES } from './cameraGeometry';
 
 export async function removeSampleFile(uri?: string) {
   if (Platform.OS !== 'web' && uri?.startsWith('file:') && FileSystem.cacheDirectory && uri.startsWith(FileSystem.cacheDirectory)) {
@@ -12,7 +12,7 @@ export async function removeSampleFile(uri?: string) {
   }
 }
 
-export async function captureAnalysisSample(camera: CameraView, queue: CameraShotQueue, signal: AbortSignal, zoom = 0): Promise<GuidanceSample> {
+export async function captureAnalysisSample(camera: CameraView, queue: CameraShotQueue, signal: AbortSignal, zoom = 0, aspect: number = RATIO_VALUES['4:3']): Promise<GuidanceSample> {
   let source: string | undefined;
   let resized: string | undefined;
   let capturedAt = 0;
@@ -24,7 +24,7 @@ export async function captureAnalysisSample(camera: CameraView, queue: CameraSho
     source = picture?.uri;
     if (signal.aborted) throw new Error('取样已取消');
     if (!picture?.uri || !picture.width || !picture.height) throw new Error('未能获取相机画面，请保持相机开启。');
-    const crop = getPhotoCrop(picture.width, picture.height, zoom);
+    const crop = getPhotoCrop(picture.width, picture.height, zoom, aspect);
     const resize = { height: Math.min(crop.height, 768) };
     const image = await manipulateAsync(picture.uri, [{ crop }, { resize }], { compress: 0.65, format: SaveFormat.JPEG, base64: true });
     resized = image.uri;
@@ -37,8 +37,8 @@ export async function captureAnalysisSample(camera: CameraView, queue: CameraSho
   }
 }
 
-export async function prepareCapturedPhoto(picture: { uri: string; width: number; height: number }, zoom: number) {
-  const crop = getPhotoCrop(picture.width, picture.height, zoom);
+export async function prepareCapturedPhoto(picture: { uri: string; width: number; height: number }, zoom: number, aspect: number = RATIO_VALUES['4:3']) {
+  const crop = getPhotoCrop(picture.width, picture.height, zoom, aspect);
   if (crop.width === picture.width && crop.height === picture.height) return picture.uri;
   try {
     const image = await manipulateAsync(picture.uri, [{ crop }], { compress: 0.95, format: SaveFormat.JPEG });

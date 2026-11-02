@@ -10,17 +10,22 @@ import { GuidanceLoop } from '../lib/guidanceLoop';
 import { CameraShotQueue } from '../lib/guidanceRules';
 import { GuidanceExecution, type ExecutionPhase } from '../lib/guidanceExecution';
 import type { CompositionTarget } from '../lib/compositionTarget';
-import { digitalZoomFactor } from '../lib/cameraGeometry';
+import { digitalZoomFactor, ratioAspect } from '../lib/cameraGeometry';
 import { GUIDANCE_SETTLE_MS } from '../constants/guidance';
 import { SYSTEM_CAMERA_CAPABILITIES } from '../constants/cameraCapabilities';
 import { applyCameraTuning, needsCameraTuning, readCameraCapabilities, resetCameraTuning, styleTuning, validateCameraTuning } from '../lib/cameraTuning';
-import type { CameraCapabilities, CameraMode, CameraStyle, Guidance, GuidanceConfig, GuidanceContext, GuidanceResult, GuidanceStatus, WhiteBalance } from '../types/guidance';
+import type { CameraCapabilities, CameraMode, CameraRatio, CameraStyle, Guidance, GuidanceConfig, GuidanceContext, GuidanceResult, GuidanceStatus, WhiteBalance } from '../types/guidance';
 
 type AppliedTuning = { aperture: number | null; whiteBalance: WhiteBalance | 'keep'; contrast: number | null };
 export type ManualCameraSettings = Partial<AppliedTuning> & { zoom?: number; flash?: GuidanceContext['flash'] };
 
+// expo-camera reports onCameraReady after the capture session is configured. If
+// that event never arrives (permission race, session restart) every control that
+// waits for it would stay dead, so a mounted preview counts as usable after this.
+const READY_FALLBACK_MS = 1600;
+
 export function useCameraGuidance(cameraRef: React.RefObject<CameraView>, onCapture: (uri: string) => void) {
-  const [context, setContext] = useState<GuidanceContext>({ style: '清透', mode: '人像', facing: 'back', zoom: 0, flash: 'off' });
+  const [context, setContext] = useState<GuidanceContext>({ style: '清透', mode: '人像', ratio: '4:3', facing: 'back', zoom: 0, flash: 'off' });
   const contextRef = useRef(context);
   const [enabled, setEnabled] = useState(false);
   const enabledRef = useRef(false);
@@ -62,6 +67,8 @@ export function useCameraGuidance(cameraRef: React.RefObject<CameraView>, onCapt
   const [appliedTuning, setAppliedTuning] = useState<AppliedTuning | null>(null);
   const manualBusy = useRef(false);
   const [adjustingParameters, setAdjustingParameters] = useState(false);
+  const [mountError, setMountError] = useState<string | null>(null);
+  const mountErrorRef = useRef<string | null>(null);
 
   function resetStep() {
     if (tuningBusy.current) {
@@ -194,7 +201,7 @@ export function useCameraGuidance(cameraRef: React.RefObject<CameraView>, onCapt
           if (signal.aborted) throw new Error('取样已取消');
           commitContext({ ...contextRef.current, capabilities });
           setTuningMessage(capabilities.native ? '系统色彩 · 按镜头能力调整' : '系统色彩 · 当前安装包不支持手动参数');
-          return await captureAnalysisSample(cameraRef.current, queue.current, signal, contextRef.current.zoom);
+          return await captureAnalysisSample(cameraRef.current, queue.current, signal, contextRef.current.zoom, ratioAspect(contextRef.current.ratio));
         }
         finally { samplingRef.current = false; if (mounted.current) setSampling(false); }
       },
@@ -317,6 +324,19 @@ export function useCameraGuidance(cameraRef: React.RefObject<CameraView>, onCapt
     return () => { disposed = true; subscriptions.forEach(item => item.remove()); };
   }, [enabled, active]);
 
+  // Fail-safe for the preview: a mounted camera view is usable even when the
+  // native onCameraReady event is dropped, otherwise the shutter and every
+  // parameter control stay disabled forever.
+  useEffect(() => {
+    if (Platform.OS === 'web' || !active || ready) return;
+    const timer = setTimeout(() => {
+      if (!mounted.current || !activeRef.current || readyRef.current || mountErrorRef.current) return;
+      readyRef.current = true; setReady(true);
+      applyStylePreset(contextRef.current.style, contextRef.current.facing);
+    }, READY_FALLBACK_MS);
+    return () => clearTimeout(timer);
+  }, [active, ready, context.facing]);
+
   async function toggleGuidance() {
     if (startingRef.current || captureRef.current || manualBusy.current) return;
     if (enabledRef.current) {
@@ -354,7 +374,7 @@ export function useCameraGuidance(cameraRef: React.RefObject<CameraView>, onCapt
     commitContext({ ...contextRef.current, zoom });
   }
   async function adjustParameters(change: ManualCameraSettings) {
-    if (!mounted.current || !activeRef.current || !readyRef.current || captureRef.current || samplingRef.current || manualBusy.current || tuningBusy.current) return;
+    if (!mounted.current || !activeRef.current || captureRef.current || samplingRef.current || manualBusy.current || tuningBusy.current) return;
     const facing = contextRef.current.facing;
     const hardware = change.aperture !== undefined || change.contrast !== undefined || change.whiteBalance !== undefined;
     // A manual edit ends the old plan so a late AI response cannot overwrite it.
@@ -390,38 +410,57 @@ export function useCameraGuidance(cameraRef: React.RefObject<CameraView>, onCapt
     if (manualBusy.current) return;
     invalidate();
     commitContext({ ...contextRef.current, style });
-    if (mounted.current && activeRef.current && readyRef.current) {
+    if (mounted.current && activeRef.current) {
       applyStylePreset(style, contextRef.current.facing);
     }
   }
   function changeMode(mode: CameraMode) { invalidate(); commitContext({ ...contextRef.current, mode }); }
+  function changeRatio(ratio: CameraRatio) {
+    if (ratio === contextRef.current.ratio || manualBusy.current) return;
+    invalidate('画幅已切换，请重新规划当前画面');
+    commitContext({ ...contextRef.current, ratio });
+  }
   function flipCamera() {
-    if (!mounted.current || !activeRef.current || !readyRef.current || captureRef.current || samplingRef.current || manualBusy.current) return;
+    if (!mounted.current || !activeRef.current || captureRef.current || samplingRef.current || manualBusy.current) return;
     readyRef.current = false; setReady(false); setSwitching(true);
+    mountErrorRef.current = null; setMountError(null);
     invalidate('正在切换镜头，准备新方案');
     setAppliedTuning(null);
     switchTimer.current = setTimeout(cameraError, 10000);
     commitContext({ ...contextRef.current, facing: contextRef.current.facing === 'front' ? 'back' : 'front', zoom: 0, flash: 'off', capabilities: undefined });
   }
   function cameraReady() {
+    mountErrorRef.current = null; setMountError(null);
     if (!mounted.current || !activeRef.current) return;
     finishSwitch(); stableAfter.current = Date.now() + GUIDANCE_SETTLE_MS;
     readyRef.current = true; setReady(true);
     applyStylePreset(contextRef.current.style, contextRef.current.facing);
   }
-  function cameraError() {
-    if (!mounted.current || !activeRef.current) return;
-    finishSwitch(); cancelZoom(); resetStep(); readyRef.current = false; setReady(false);
-    enabledRef.current = false; setEnabled(false); loop.current?.stop();
-    setStatus({ phase: 'error', message: '相机未能启动，请退出取景器后重试并检查相机权限。' });
-    setAppliedTuning(null);
+  function cameraError(reason?: { message?: string } | string) {
+    const message = typeof reason === 'string' ? reason : reason?.message ?? null;
+    mountErrorRef.current = message;
+    if (mounted.current) setMountError(message);
+    finishSwitch(); cancelZoom(); resetStep(); readyRef.current = false;
+    if (mounted.current) setReady(false);
+    enabledRef.current = false;
+    if (mounted.current) setEnabled(false);
+    loop.current?.stop();
+    const denied = !!message && /permission|granted/i.test(message);
+    if (mounted.current) {
+      setStatus({ phase: 'error', message: denied ? '相机权限未开启，请在系统设置中允许 Drama相机 访问相机。' : '相机未能启动，请退出取景器后重试并检查相机权限。' });
+      setAppliedTuning(null);
+    }
   }
   function confirmAdjustment() {
     if (!enabledRef.current || !readyRef.current || !activeRef.current || captureRef.current || busyRef.current) return;
     if (executor.current.confirmManual(Date.now())) syncExecution();
   }
   async function capture() {
-    if (captureRef.current || !readyRef.current || !activeRef.current || tuningBusy.current || manualBusy.current) return;
+    if (captureRef.current || !activeRef.current || tuningBusy.current || manualBusy.current) return;
+    if (!cameraRef.current) {
+      if (mounted.current) setStatus({ phase: 'error', message: '相机尚未挂载，请稍候再按快门。' });
+      return;
+    }
     captureRef.current = true; setCapturing(true); cancelZoom(); resetStep(); loop.current?.stop();
     setStatus({ phase: 'waiting', message: '拍摄中，AI 分析已暂停' });
     try {
@@ -430,7 +469,7 @@ export function useCameraGuidance(cameraRef: React.RefObject<CameraView>, onCapt
         const picture = await cameraRef.current?.takePictureAsync({ quality: 0.9, skipProcessing: false });
         if (!picture?.uri) throw new Error('没有获取到照片');
         if (!mounted.current || !activeRef.current) { await removeSampleFile(picture.uri); return; }
-        const uri = await prepareCapturedPhoto(picture, contextRef.current.zoom);
+        const uri = await prepareCapturedPhoto(picture, contextRef.current.zoom, ratioAspect(contextRef.current.ratio));
         if (!mounted.current || !activeRef.current) { await removeSampleFile(uri); return; }
         onCapture(uri);
       });
@@ -442,7 +481,11 @@ export function useCameraGuidance(cameraRef: React.RefObject<CameraView>, onCapt
       if (mounted.current) { setCapturing(false); setEnabled(false); }
     }
   }
-  return { context, enabled, autoZoom, adjustingZoom, adjustingParameters, ready, active, capturing, sampling, switching, starting, result, target, executionPhase, status, configMissing, sensorAvailable, tuningMessage, appliedTuning,
-    toggleGuidance, toggleAutoZoom, manualZoom, adjustParameters, changeStyle, changeMode, flipCamera, cameraReady, cameraError, capture, confirmAdjustment,
+  // Shutter and manual tuning depend on a live camera view, never on a pending
+  // AI plan: a stalled guidance loop must not freeze the camera.
+  const canCapture = active && !capturing && !adjustingParameters;
+  const canTune = active && !capturing && !adjustingParameters;
+  return { context, enabled, autoZoom, adjustingZoom, adjustingParameters, ready, active, capturing, sampling, switching, starting, result, target, executionPhase, status, configMissing, sensorAvailable, tuningMessage, appliedTuning, mountError, canCapture, canTune,
+    toggleGuidance, toggleAutoZoom, manualZoom, adjustParameters, changeStyle, changeMode, changeRatio, flipCamera, cameraReady, cameraError, capture, confirmAdjustment,
     refresh: () => invalidate('正在重新规划当前画面') };
 }

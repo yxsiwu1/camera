@@ -4,9 +4,13 @@ export type CameraStyle = '清透' | '奶杏' | '薄荷' | '胶片';
 export type CameraMode = '人像' | '风景' | '夜景';
 export type WhiteBalance = 'auto' | 'daylight' | 'cloudy' | 'tungsten' | 'fluorescent';
 export type CameraCapabilities = { native: boolean; cameraId: string; apertures: number[]; contrast: boolean; whiteBalance: WhiteBalance[] };
+// Framing ratio offered in the viewfinder. Preview, analysis sample and the
+// saved photo all share the same crop so what you see is what you get.
+export type CameraRatio = '4:3' | '16:9' | '1:1';
 export type GuidanceContext = {
   style: CameraStyle;
   mode: CameraMode;
+  ratio: CameraRatio;
   facing: 'front' | 'back';
   zoom: number;
   flash: 'off' | 'on' | 'auto';
