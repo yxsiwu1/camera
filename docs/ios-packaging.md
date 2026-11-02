@@ -11,7 +11,18 @@
 | B. EAS 云构建 | Expo 账号 | 模拟器包 / App Store 包 | 要上架才用 |
 | C. 本地 Mac | macOS + Xcode | 调试直装 / Archive | 长期维护 |
 
-## ✅ 已经构建完成（2026-11-02）
+## ✅ 最新可用版本：1.3.1（2026-11-02，含三症状修复）
+
+- 流水线：<https://github.com/yxsiwu1/camera/actions/runs/41422472453>（SUCCESS，Xcode 15.4，约 9 分钟）
+- 现成 ipa：<https://github.com/yxsiwu1/camera/releases/download/ios-1.3.1/Drama-trollstore.ipa>（17,396,261 字节 / 16.59 MB）
+- 发布页：<https://github.com/yxsiwu1/camera/releases/tag/ios-1.3.1>
+- 产物实测：主程序 16,364,576 字节、`LC_CODE_SIGNATURE` 存在、`CSMAGIC_EMBEDDED_SIGNATURE` 存在、
+  entitlements 含 `keychain-access-groups` / `application-identifier`、`hermes.framework` 已签名、
+  `Info.plist` 为 `1.3.1` / build `2` / `MinimumOSVersion 15.1` / 无 `NSMicrophoneUsageDescription`、
+  `main.jsbundle` 内含新代码（画幅 / 相机诊断 / 微调 / CameraTuning 均已编入 Hermes 字节码）。
+- 手机上直接点上面那条 ipa 链接下载 → 用 TrollStore 打开 → Install（覆盖安装即可，Bundle ID 未变）。
+
+## 🕐 上一版：1.3.0（2026-11-02，有已知问题）
 
 - 流水线：<https://github.com/yxsiwu1/camera/actions/runs/41417163509>（SUCCESS，Xcode 15.4，约 10 分钟）
 - 现成 ipa：<https://github.com/yxsiwu1/camera/releases/download/ios-1.3.0/Drama-trollstore.ipa>（16.58 MB）
@@ -19,7 +30,7 @@
 - 产物实测：主程序 `arm64`、`LC_CODE_SIGNATURE` 存在、`CSMAGIC_EMBEDDED_SIGNATURE` 存在、
   entitlements 含 `keychain-access-groups` / `application-identifier`、
   `hermes.framework` 已签名、`Info.plist` 的 `MinimumOSVersion = 15.1`、无 `NSMicrophoneUsageDescription`。
-- 手机上直接点上面那条 ipa 链接下载 → 用 TrollStore 打开 → Install。
+- 已知问题：快门按不动 / 参数不能微调 / 比例不能调 —— 见下节，已由 1.3.1 修复。
 
 ## 🔧 v1.3.1：修掉「快门按不动 / 参数不能微调 / 比例不能调」
 
